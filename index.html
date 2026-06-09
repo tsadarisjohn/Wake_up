@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ξυπνάμε στις 7:30</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Inter:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0D1117;
+      --surface: #161B22;
+      --text: #F0EDE8;
+      --muted: #8B8680;
+      --amber: #F5A623;
+      --amber-dim: rgba(245, 166, 35, 0.12);
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1.5rem;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Subtle ambient glow */
+    body::before {
+      content: '';
+      position: fixed;
+      top: -30%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(ellipse, rgba(245, 166, 35, 0.07) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .card {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 400px;
+      text-align: center;
+    }
+
+    .eyebrow {
+      font-size: 0.7rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--amber);
+      margin-bottom: 2rem;
+      opacity: 0.85;
+    }
+
+    .alarm-icon {
+      font-size: 2.4rem;
+      margin-bottom: 1.2rem;
+      display: block;
+      animation: gentle-sway 4s ease-in-out infinite;
+    }
+
+    @keyframes gentle-sway {
+      0%, 100% { transform: rotate(-4deg); }
+      50% { transform: rotate(4deg); }
+    }
+
+    .wake-time {
+      font-family: 'DM Serif Display', serif;
+      font-size: clamp(4.5rem, 20vw, 7rem);
+      line-height: 1;
+      color: var(--text);
+      letter-spacing: -0.02em;
+      margin-bottom: 0.4rem;
+    }
+
+    .wake-label {
+      font-size: 0.85rem;
+      color: var(--muted);
+      font-weight: 300;
+      letter-spacing: 0.04em;
+      margin-bottom: 3rem;
+    }
+
+    /* Countdown */
+    .countdown-wrap {
+      background: var(--amber-dim);
+      border: 1px solid rgba(245, 166, 35, 0.18);
+      border-radius: 16px;
+      padding: 1.5rem 2rem;
+      margin-bottom: 2.5rem;
+    }
+
+    .countdown-label {
+      font-size: 0.68rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 1rem;
+    }
+
+    .countdown-digits {
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      gap: 0.5rem;
+    }
+
+    .cd-block {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-width: 52px;
+    }
+
+    .cd-num {
+      font-family: 'DM Serif Display', serif;
+      font-size: 2.6rem;
+      line-height: 1;
+      color: var(--amber);
+      transition: opacity 0.2s;
+    }
+
+    .cd-num.tick {
+      opacity: 0.4;
+    }
+
+    .cd-unit {
+      font-size: 0.6rem;
+      color: var(--muted);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-top: 0.3rem;
+    }
+
+    .cd-sep {
+      font-family: 'DM Serif Display', serif;
+      font-size: 2.2rem;
+      color: var(--amber);
+      opacity: 0.4;
+      padding-top: 0.1rem;
+      animation: blink 1s step-end infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 0.4; }
+      50% { opacity: 0.1; }
+    }
+
+    /* Confirm button */
+    .confirm-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--amber);
+      color: #0D1117;
+      border: none;
+      border-radius: 100px;
+      padding: 0.85rem 2rem;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: transform 0.15s, opacity 0.15s;
+      letter-spacing: 0.01em;
+    }
+
+    .confirm-btn:hover { opacity: 0.88; transform: scale(1.02); }
+    .confirm-btn:active { transform: scale(0.97); }
+    .confirm-btn.confirmed {
+      background: transparent;
+      border: 1px solid rgba(245, 166, 35, 0.4);
+      color: var(--amber);
+      cursor: default;
+      pointer-events: none;
+    }
+
+    .confirmed-msg {
+      display: none;
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-top: 1rem;
+    }
+
+    .confirmed-msg.show { display: block; }
+
+    /* Footer */
+    .footer {
+      margin-top: 3rem;
+      font-size: 0.7rem;
+      color: var(--muted);
+      opacity: 0.5;
+      letter-spacing: 0.04em;
+    }
+
+    /* Expired state */
+    .expired-text {
+      display: none;
+      font-family: 'DM Serif Display', serif;
+      font-size: 1.4rem;
+      color: var(--amber);
+      margin-bottom: 0.5rem;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .alarm-icon { animation: none; }
+      .cd-sep { animation: none; opacity: 0.4; }
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <p class="eyebrow">Υπενθύμιση</p>
+    <span class="alarm-icon">⏰</span>
+    <div class="wake-time">7:30</div>
+    <div class="wake-label">Αύριο το πρωί &mdash; ξύπνα τον Γιάννη και τον Νίκο</div>
+
+    <div class="countdown-wrap">
+      <div class="countdown-label">Απομένουν</div>
+      <div class="countdown-digits">
+        <div class="cd-block">
+          <div class="cd-num" id="cd-h">00</div>
+          <div class="cd-unit">ώρες</div>
+        </div>
+        <div class="cd-sep">:</div>
+        <div class="cd-block">
+          <div class="cd-num" id="cd-m">00</div>
+          <div class="cd-unit">λεπτά</div>
+        </div>
+        <div class="cd-sep">:</div>
+        <div class="cd-block">
+          <div class="cd-num" id="cd-s">00</div>
+          <div class="cd-unit">δευτ.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="expired-text" id="expired">Καλημέρα! 🌅</div>
+
+    <button class="confirm-btn" id="confirm-btn" onclick="confirmWakeup()">
+      ✓ &nbsp;Το είδα
+    </button>
+    <div class="confirmed-msg" id="confirmed-msg">
+      Τέλεια — τα λέμε στις 7:30 ☀️
+    </div>
+
+    <div class="footer">Yiannis · <span id="today-date"></span></div>
+  </div>
+
+  <script>
+    // Set today's date in footer
+    const now = new Date();
+    document.getElementById('today-date').textContent =
+      now.toLocaleDateString('el-GR', { day: 'numeric', month: 'long', year: 'numeric' });
+
+    // Target: tomorrow at 7:30
+    function getTarget() {
+      const t = new Date();
+      t.setDate(t.getDate() + 1);
+      t.setHours(7, 30, 0, 0);
+      return t;
+    }
+
+    const target = getTarget();
+
+    function pad(n) { return String(n).padStart(2, '0'); }
+
+    function updateCountdown() {
+      const diff = target - Date.now();
+      if (diff <= 0) {
+        document.getElementById('expired').style.display = 'block';
+        document.querySelector('.countdown-wrap').style.display = 'none';
+        return;
+      }
+
+      const totalSec = Math.floor(diff / 1000);
+      const h = Math.floor(totalSec / 3600);
+      const m = Math.floor((totalSec % 3600) / 60);
+      const s = totalSec % 60;
+
+      const sEl = document.getElementById('cd-s');
+      sEl.classList.add('tick');
+      setTimeout(() => sEl.classList.remove('tick'), 180);
+
+      document.getElementById('cd-h').textContent = pad(h);
+      document.getElementById('cd-m').textContent = pad(m);
+      document.getElementById('cd-s').textContent = pad(s);
+    }
+
+    updateCountdown();
+    setInterval(updateCountdown, 1000);
+
+    function confirmWakeup() {
+      const btn = document.getElementById('confirm-btn');
+      btn.textContent = '✓  Επιβεβαιώθηκε';
+      btn.classList.add('confirmed');
+      document.getElementById('confirmed-msg').classList.add('show');
+    }
+  </script>
+</body>
+</html>
